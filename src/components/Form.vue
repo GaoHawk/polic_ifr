@@ -75,18 +75,19 @@
     <el-form-item
       class="custom-width"
       style="width:62%;float:right;"
-      :label="'巡逻路线' + index"
+      :label="'巡逻点' + index"
       :key="form.key"
       :prop="'form.'+index+'.regionRight'"
       :rules="{
         required: true, message: '巡逻点不能为空', trigger: 'blur'
       }"
-      :label-position="right"
     >
     <el-select 
     style="width:51%;"
+    class="right"
     v-model="dynamicValidateForm.form[index].regionRight" 
-    placeholder="请选择活动区域2">
+    placeholder="请选择巡逻点"
+    @change="changeValue(index)">
       <el-option v-for="item in dynamicValidateForm.form[index].selectOps" :label="item.label" :value="item.value"></el-option>
     </el-select>
   <el-button @click.prevent="removeDomain(form)">删除</el-button>
@@ -103,6 +104,46 @@
 <script>
 
 export default {
+  beforeCreate(){
+        var uid = window.location.search;
+        console.log(uid);
+        var userId = uid.split('=')[1]
+        this.$http.get('http://localhost:8080/getUserInfo',{
+           params:{
+             userid:Number(userId)
+           }
+        }).then(response => {
+           console.log(response.data);
+           console.log(typeof (response.data.usertype +1))
+           this.dynamicValidateForm.polic = (response.data.usertype +1).toString();
+           this.dynamicValidateForm.name = response.data.userName;
+           this.dynamicValidateForm.phone = Number(response.data.phone);
+           this.dynamicValidateForm.number = Number(response.data.policeNumber);
+           let patroStr = response.data.patrolids;
+           let patroArr = patroStr.substr(1,patroStr.length-2).split(',');
+           console.log(patroArr);
+           let patroNames = response.data.patrolnames;
+           let pNameArr = patroNames.substr(1,patroNames.length-2).split(',');
+           console.log(pNameArr);
+           let patroTypes = response.data.patrolids_type;
+           let TypeArr = patroTypes.substr(1,patroTypes.length-1).split(',');
+           console.log(TypeArr);
+           for(let i = 0;i<patroArr.length;i++){
+               var newStr = patroArr[i];
+               console.log(newStr.substr(0,newStr.length-1))
+               this.dynamicValidateForm.form.push({
+                  regionLeft:TypeArr[i],
+                  key: Date.now(),
+                  regionRight:pNameArr[i],
+                  selectOps:[]
+              })
+           }
+           var selectedBtn = document.querySelectorAll('.right.el-select');
+           console.log(selectedBtn);
+        },response => {
+          console.log(response);
+        })
+  },
   name: 'hello',
   data () {
     return {
@@ -111,20 +152,7 @@ export default {
            name:'',
            phone:'',
            number:'',
-           form:[{
-             regionLeft:'',
-             regionRight:'',
-              selectOps:[{
-                  label:'区域一',
-                  value:'shanghai'
-              },{
-                  label:'区域二',
-                  value:'beijing'
-              },{
-                  label:'区域三',
-                  value:'wuhan'
-              }],
-           }]
+           form:[]
        },
 
 
@@ -154,12 +182,89 @@ export default {
         this.dynamicValidateForm.form.push({
              regionLeft:'',
              key: Date.now(),
-             regionRigth:'',
+             regionRight:'',
              selectOps:[]
         })
       },
+      clickSelect(){
+         console.log('click');
+      },
+      changeValue(index){
+        var patralP = this.dynamicValidateForm.form[index].regionRight;
+        console.log(patralP);
+      },
       changePat(index){
-        console.log(this.dynamicValidateForm.form[index]);
+        var routeType= this.dynamicValidateForm.form[index].regionLeft;
+        console.log(routeType);
+        var currentForm = this.dynamicValidateForm.form[index];
+        currentForm.selectOps = [];
+        currentForm.regionRight = '';
+        this.$http.get('http://localhost:8080/getPatrol?type='+routeType,{
+    
+        }).then(response => {
+           console.log(response.data.patrolList);
+           let patrolList = response.data.patrolList;
+           for(let i = 0;i<patrolList.length;i++){
+              var obj = {
+                label:'',
+                value:''
+              }
+              obj.label = patrolList[i].name;
+              obj.value = patrolList[i].id;
+              currentForm.selectOps.push(obj);
+           }
+        },response => {
+          console.log(response);
+        })
+      }
+  },
+  mounted(){
+      var vmForm = document.querySelector('.el-form.demo-dynamic');
+      var form =  this.dynamicValidateForm.form;
+      var vm = this;
+      var n = 0;
+      vmForm.addEventListener('DOMNodeInserted',function(e){
+    
+          if(e.target.parentNode.className ==="el-select right"){
+               n++;
+               console.log(n);
+            var selectedBtn = document.querySelectorAll('.right.el-select');
+            console.log(selectedBtn[(n-1)]);
+            selectedBtn[(n-1)].addEventListener('click',function(){
+               for(let i=0;i<selectedBtn.length;i++){
+                 if(this ==selectedBtn[i]){
+                   console.log(i);
+                   console.log(form[i]);
+                   var routeType = form[i].regionLeft;
+
+                   vm.$http.get('http://localhost:8080/getPatrol?type='+routeType,{
+    
+                    }).then(response => {
+                      console.log(response.data.patrolList);
+                      let patrolList = response.data.patrolList;
+                      for(let j = 0;j<patrolList.length;j++){
+                          var obj = {
+                            label:'',
+                            value:''
+                          }
+                          obj.label = patrolList[j].name;
+                          obj.value = patrolList[j].id;
+                          form[i].selectOps.push(obj);
+                      }
+                    },response => {
+                      console.log(response);
+                    })
+                 }
+               }
+            });
+            // console.log(selectedBtn);
+ 
+       
+          }
+      });
+
+      function myClick(Btn,index){
+        console.log(index)
       }
   }
 }
