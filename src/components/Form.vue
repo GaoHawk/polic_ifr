@@ -4,7 +4,7 @@
     prop="polic"
     label="警种"
     :rules="[
-      { required: true, message: '请选择警种', trigger: 'blur' },
+      { required: true, message: '请选择警种', trigger: 'change' },
     ]"
   >
   <el-select v-model="dynamicValidateForm.polic" placeholder="请选择警种"
@@ -31,7 +31,7 @@
   <el-form-item label="联系方式" prop="phone"
     :rules="[
       { required:true, message:'联系方式不能为空', trigger:'blur' },
-      { type:'number',message:'请输入正确联系方式' }
+      // { type:'number',message:'请输入正确联系方式' }
     ]"
   >
     <el-input v-model="dynamicValidateForm.phone"></el-input>
@@ -40,7 +40,7 @@
   <el-form-item label="编号" prop="number"
     :rules="[
       { required:true, message:'编号不能为空', trigger:'blur' },
-      { type:'number',message:'编号必须为数字' }
+      // { type:'number',message:'编号必须为数字' }
     ]"
   >
     <el-input v-model="dynamicValidateForm.number"></el-input>
@@ -54,7 +54,7 @@
     :key="form.key"
     :prop="'form.'+index+'.regionLeft'"
     :rules="{
-      required: true, message: '巡逻路线不能为空', trigger: 'blur'
+      required: true, message: '巡逻路线不能为空', trigger: 'change'
     }"
   >
     <el-select v-model="dynamicValidateForm.form[index].regionLeft" placeholder="请选择巡逻区域" 
@@ -78,9 +78,7 @@
       :label="'巡逻点' + index"
       :key="form.key"
       :prop="'form.'+index+'.regionRight'"
-      :rules="{
-        required: true, message: '巡逻点不能为空', trigger: 'blur'
-      }"
+
     >
     <el-select 
     style="width:51%;"
@@ -108,41 +106,48 @@ export default {
         var uid = window.location.search;
         console.log(uid);
         var userId = uid.split('=')[1]
-        this.$http.get('http://localhost:8080/getUserInfo',{
-           params:{
-             userid:Number(userId)
-           }
-        }).then(response => {
-           console.log(response.data);
-           console.log(typeof (response.data.usertype +1))
-           this.dynamicValidateForm.polic = (response.data.usertype +1).toString();
-           this.dynamicValidateForm.name = response.data.userName;
-           this.dynamicValidateForm.phone = Number(response.data.phone);
-           this.dynamicValidateForm.number = Number(response.data.policeNumber);
-           let patroStr = response.data.patrolids;
-           let patroArr = patroStr.substr(1,patroStr.length-2).split(',');
-           console.log(patroArr);
-           let patroNames = response.data.patrolnames;
-           let pNameArr = patroNames.substr(1,patroNames.length-2).split(',');
-           console.log(pNameArr);
-           let patroTypes = response.data.patrolids_type;
-           let TypeArr = patroTypes.substr(1,patroTypes.length-1).split(',');
-           console.log(TypeArr);
-           for(let i = 0;i<patroArr.length;i++){
-               var newStr = patroArr[i];
-               console.log(newStr.substr(0,newStr.length-1))
-               this.dynamicValidateForm.form.push({
-                  regionLeft:TypeArr[i],
-                  key: Date.now(),
-                  regionRight:pNameArr[i],
-                  selectOps:[]
-              })
-           }
-           var selectedBtn = document.querySelectorAll('.right.el-select');
-           console.log(selectedBtn);
-        },response => {
-          console.log(response);
-        })
+        if(userId){
+          this.$http.get('http://localhost:8080/getUserInfo',{
+            params:{
+              userid:Number(userId)
+            }
+          }).then(response => {
+            console.log(response.data);
+            console.log(typeof (response.data.usertype +1))
+            this.dynamicValidateForm.polic = (response.data.usertype +1).toString();
+            this.dynamicValidateForm.name = response.data.userName;
+            this.dynamicValidateForm.phone = Number(response.data.phone);
+            this.dynamicValidateForm.number = Number(response.data.policeNumber);
+            let patroStr = response.data.patrolids;
+            if(patroStr && patroStr.length>0){
+                let patroArr = patroStr.substr(1,patroStr.length-2).split(',');
+                console.log(patroArr);
+                let patroNames = response.data.patrolnames;
+                let pNameArr = patroNames.substr(1,patroNames.length-2).split(',');
+                console.log(pNameArr);
+                let patroTypes = response.data.patrolids_type;
+                let TypeArr = patroTypes.substr(1,patroTypes.length-1).split(',');
+                console.log(TypeArr);
+                this.dynamicValidateForm.form = [];
+                for(let i = 0;i<patroArr.length;i++){
+                    var newStr = patroArr[i];
+                    console.log(newStr.substr(0,newStr.length-1))
+                    this.dynamicValidateForm.form.push({
+                        regionLeft:TypeArr[i],
+                        key: Date.now(),
+                        regionRight:pNameArr[i],
+                        selectOps:[]
+                    })
+                }
+            }
+ 
+            var selectedBtn = document.querySelectorAll('.right.el-select');
+            console.log(selectedBtn);
+          },response => {
+            console.log(response);
+          })
+        }
+
   },
   name: 'hello',
   data () {
@@ -152,7 +157,11 @@ export default {
            name:'',
            phone:'',
            number:'',
-           form:[]
+           form:[{
+             regionLeft:'',
+             regionRight:'',
+             selectOps:[]
+           }]
        },
 
 
@@ -163,6 +172,37 @@ export default {
         this.$refs[formName].validate((valid) => {
           if (valid) {
             alert('submit!');
+            var patrolids = '';
+            var patrolnames = '';
+            var checkSubm = true;
+
+            for(let i = 0;i<this.dynamicValidateForm.form.length;i++){
+              let form = this.dynamicValidateForm.form[i];
+              if(form.regionRight.length==0){
+                var rSelect = document.querySelectorAll('.el-select.right');
+                console.log(rSelect[i]);
+                var errDiv = document.createElement("div");
+                errDiv.setAttribute('class','el-form-item__error');
+                errDiv.innerHTML = `巡逻点不能为空`;
+                `<div class="el-form-item__error">巡逻点不能为空</div>`;
+                rSelect[i].appendChild(errDiv);
+                console.log('error sub');
+                checkSubm = false;
+                // return false;
+              }
+              patrolids += ","+ form.regionRight;
+
+              for(let j =0;j<form.selectOps.length;j++){
+                if(form.selectOps[j].value == form.regionRight){
+                   patrolnames += form.selectOps[j].label;
+                }
+              }
+            }
+            if(!checkSubm){
+                return false;
+            }
+            console.log(patrolids);
+            console.log(patrolnames);
           } else {
             console.log('error submit!!');
             return false;
@@ -191,7 +231,14 @@ export default {
       },
       changeValue(index){
         var patralP = this.dynamicValidateForm.form[index].regionRight;
-        console.log(patralP);
+        var selectedBtn = document.querySelectorAll('.right.el-select');
+        var errNode = selectedBtn[index].querySelector('.el-form-item__error');
+        console.log(errNode);
+        if(errNode){
+            selectedBtn[index].removeChild(errNode);
+       }
+       console.log(selectedBtn[index]);
+       console.log(patralP);
       },
       changePat(index){
         var routeType= this.dynamicValidateForm.form[index].regionLeft;
@@ -223,14 +270,20 @@ export default {
       var form =  this.dynamicValidateForm.form;
       var vm = this;
       var n = 0;
-      vmForm.addEventListener('DOMNodeInserted',function(e){
-    
-          if(e.target.parentNode.className ==="el-select right"){
-               n++;
+      var pNode = document.querySelector('.el-form-item.custom-width')
+      var uid = window.location.search;
+        console.log(uid);
+      var userId = uid.split('=')[1]
+
+      if(userId){
+        vmForm.addEventListener('DOMNodeInserted',function(e){
+          if(e.target.parentNode.className ==="el-select right"  ){
+                  n++;
                console.log(n);
             var selectedBtn = document.querySelectorAll('.right.el-select');
             console.log(selectedBtn[(n-1)]);
             selectedBtn[(n-1)].addEventListener('click',function(){
+
                for(let i=0;i<selectedBtn.length;i++){
                  if(this ==selectedBtn[i]){
                    console.log(i);
@@ -262,10 +315,8 @@ export default {
        
           }
       });
-
-      function myClick(Btn,index){
-        console.log(index)
       }
+
   }
 }
 </script>
