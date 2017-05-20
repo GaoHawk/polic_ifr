@@ -116,31 +116,42 @@ export default {
             console.log(typeof (response.data.usertype +1))
             this.dynamicValidateForm.polic = (response.data.usertype +1).toString();
             this.dynamicValidateForm.name = response.data.userName;
-            this.dynamicValidateForm.phone = Number(response.data.phone);
-            this.dynamicValidateForm.number = Number(response.data.policeNumber);
+            this.dynamicValidateForm.phone = response.data.phone;
+            this.dynamicValidateForm.number = response.data.policeNumber;
             let patroStr = response.data.patrolids;
             if(patroStr && patroStr.length>0){
-                let patroArr = patroStr.substr(1,patroStr.length-2).split(',');
+                let patroArr = patroStr.substr(1,patroStr.length-1).split(',');
+                if(patroArr[patroArr.length-1] == ""){
+                  patroArr.length = patroArr.length - 1;
+                }
                 console.log(patroArr);
                 let patroNames = response.data.patrolnames;
-                let pNameArr = patroNames.substr(1,patroNames.length-2).split(',');
+                let pNameArr = patroNames.substr(1,patroNames.length-1).split(',');
+                if(pNameArr[pNameArr.length-1] == ""){
+                  pNameArr.length = pNameArr.length - 1;
+                }
                 console.log(pNameArr);
                 let patroTypes = response.data.patrolids_type;
                 let TypeArr = patroTypes.substr(1,patroTypes.length-1).split(',');
+                if(TypeArr[TypeArr.length-1] == ""){
+                  TypeArr.length = TypeArr.length - 1;
+                }
                 console.log(TypeArr);
                 this.dynamicValidateForm.form = [];
                 for(let i = 0;i<patroArr.length;i++){
                     var newStr = patroArr[i];
-                    console.log(newStr.substr(0,newStr.length-1))
                     this.dynamicValidateForm.form.push({
                         regionLeft:TypeArr[i],
                         key: Date.now(),
-                        regionRight:pNameArr[i],
-                        selectOps:[]
+                        regionRight:patroArr[i],
+                        selectOps:[{
+                           label:pNameArr[i],
+                           value:patroArr[i]
+                        }]
                     })
                 }
             }
- 
+            console.log(this.dynamicValidateForm.form);
             var selectedBtn = document.querySelectorAll('.right.el-select');
             console.log(selectedBtn);
           },response => {
@@ -175,6 +186,10 @@ export default {
             var patrolids = '';
             var patrolnames = '';
             var checkSubm = true;
+            var uid = window.location.search;
+             console.log(uid);
+            var userId = uid.split('=')[1];
+            var patroTotal = [];
 
             for(let i = 0;i<this.dynamicValidateForm.form.length;i++){
               let form = this.dynamicValidateForm.form[i];
@@ -190,12 +205,27 @@ export default {
                 checkSubm = false;
                 // return false;
               }
+              console.log(form.regionRight);
               patrolids += ","+ form.regionRight;
 
               for(let j =0;j<form.selectOps.length;j++){
-                if(form.selectOps[j].value == form.regionRight){
-                   patrolnames += form.selectOps[j].label;
-                }
+                patroTotal.push(form.selectOps[j]);
+                // if(form.selectOps[j].value == form.regionRight){
+                //    patrolnames += ","+form.selectOps[j].label;
+                // }
+              }
+            }
+            console.log(patroTotal);
+            console.log(patrolids);
+            let patroArr = patrolids.substr(1,patrolids.length-1).split(',');
+            console.log(patroArr);
+            for(let i = 0;i<patroArr.length;i++){
+              for(let j =0;j<patroTotal.length;j++){
+                 console.log(patroTotal[j].value,Number(patroArr[i]))
+                  if(patroTotal[j].value == Number(patroArr[i])){
+                    console.log(true);
+                    patrolnames += ","+ patroTotal[j].label;
+                  }
               }
             }
             if(!checkSubm){
@@ -203,6 +233,34 @@ export default {
             }
             console.log(patrolids);
             console.log(patrolnames);
+            this.$http({
+                method: 'post',
+                url:'http://localhost:8080/modifyUserInfo',
+                data:{
+                    usertype:this.dynamicValidateForm.polic,
+                    nickname:this.dynamicValidateForm.name,
+                    phone:this.dynamicValidateForm.phone,
+                    police_number:this.dynamicValidateForm.number,
+                    patrolids:patrolids,
+                    patrolnames:patrolnames,
+                    id: userId?userId:0
+                }
+
+            }).then(response => {
+                console.log(response.data);
+                // var classData = response.data.data;
+                // for(let i=0;i<classData.length;i++){
+                //   let classObj = {
+                //       classID:classData[i].id,
+                //       className:classData[i].grade + classData[i].name
+                //   }
+                //   this.$store.commit('SET_HAND_CLASS',classObj);
+                // }
+            }, response => {
+
+                console.log(response)
+            })
+
           } else {
             console.log('error submit!!');
             return false;
@@ -267,10 +325,8 @@ export default {
   },
   mounted(){
       var vmForm = document.querySelector('.el-form.demo-dynamic');
-      var form =  this.dynamicValidateForm.form;
       var vm = this;
       var n = 0;
-      var pNode = document.querySelector('.el-form-item.custom-width')
       var uid = window.location.search;
         console.log(uid);
       var userId = uid.split('=')[1]
@@ -283,7 +339,7 @@ export default {
             var selectedBtn = document.querySelectorAll('.right.el-select');
             console.log(selectedBtn[(n-1)]);
             selectedBtn[(n-1)].addEventListener('click',function(){
-
+              var form = vm.dynamicValidateForm.form;
                for(let i=0;i<selectedBtn.length;i++){
                  if(this ==selectedBtn[i]){
                    console.log(i);
