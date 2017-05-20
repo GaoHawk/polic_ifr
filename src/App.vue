@@ -62,8 +62,7 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin:0 auto;
-    margin-top: 35px;
-  min-width:876px;
+  margin-top: 23px;
   width:80%;
 }
 .tabs{
