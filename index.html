@@ -9,7 +9,7 @@
   <body >
     <div id="app">
     </div>
-   <div style="float:right;margin-right:2%;">
+   <div style="float:right;margin-right:6%;">
     <i class="el-icon-close" style="position:fixed;top:16px;z-index:100;cursor:pointer;" onclick="closeHome()"></i>
     </div>
     <!-- built files will be auto injected -->
@@ -19,6 +19,8 @@
       //  console.log('close');
        var ifr = window.parent.document.getElementById("mainIframe");
        window.parent.document.getElementById("mainIframe").style.display="none";
+       console.log(ifr.nextSibling);
+       ifr.nextElementSibling.style.display = 'none';
     }
   </script>
 </html>

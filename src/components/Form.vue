@@ -10,13 +10,13 @@
   <el-select v-model="dynamicValidateForm.polic" placeholder="请选择警种"
     style="float:left;width:34%;"
     >
-    <el-option label="刑侦民警" value="1"></el-option>
-    <el-option label="社区民警" value="2"></el-option>
-    <el-option label="治安民警" value="3"></el-option>
-    <el-option label="巡逻民警" value="4"></el-option>
-    <el-option label="特警" value="5"></el-option>
-    <el-option label="辅警" value="6"></el-option>
-    <el-option label="交警" value="7"></el-option>
+    <el-option label="刑侦民警" value="0"></el-option>
+    <el-option label="社区民警" value="1"></el-option>
+    <el-option label="治安民警" value="2"></el-option>
+    <el-option label="巡逻民警" value="3"></el-option>
+    <el-option label="特警" value="4"></el-option>
+    <el-option label="辅警" value="5"></el-option>
+    <el-option label="交警" value="6"></el-option>
   </el-select>
   </el-form-item>
 
@@ -94,7 +94,7 @@
   </el-form-item>
   <el-form-item>
     <el-button type="primary" @click="submitForm('dynamicValidateForm')">提交</el-button>
-    <el-button @click="addDomain">新增域名</el-button>
+    <el-button @click="addDomain">新增巡逻路线</el-button>
     <el-button @click="resetForm('dynamicValidateForm')">重置</el-button>
   </el-form-item>
 </el-form>
@@ -107,14 +107,14 @@ export default {
         console.log(uid);
         var userId = uid.split('=')[1]
         if(userId){
-          this.$http.get('http://localhost:8080/getUserInfo',{
+          this.$http.get('/getUserInfo',{
             params:{
               userid:Number(userId)
             }
           }).then(response => {
             console.log(response.data);
             console.log(typeof (response.data.usertype +1))
-            this.dynamicValidateForm.polic = (response.data.usertype +1).toString();
+            this.dynamicValidateForm.polic = (response.data.usertype).toString();
             this.dynamicValidateForm.name = response.data.userName;
             this.dynamicValidateForm.phone = response.data.phone;
             this.dynamicValidateForm.number = response.data.policeNumber;
@@ -182,7 +182,6 @@ export default {
      submitForm(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            alert('submit!');
             var patrolids = '';
             var patrolnames = '';
             var checkSubm = true;
@@ -235,7 +234,7 @@ export default {
             console.log(patrolnames);
             this.$http({
                 method: 'post',
-                url:'http://localhost:8080/modifyUserInfo',
+                url:'/modifyUserInfo',
                 data:{
                     usertype:this.dynamicValidateForm.polic,
                     nickname:this.dynamicValidateForm.name,
@@ -256,6 +255,12 @@ export default {
                 //   }
                 //   this.$store.commit('SET_HAND_CLASS',classObj);
                 // }
+               var ifr = window.parent.document.getElementById("mainIframe");
+               window.parent.document.getElementById("mainIframe").style.display = "none";
+               ifr.nextElementSibling.style.display = 'none';
+               ifr.parentNode.parentNode.parentNode.location.reload();
+              //  ifr.parentNode..parentNode.parentNode.reload();
+              //  window.parent.reload();
             }, response => {
 
                 console.log(response)
@@ -304,7 +309,7 @@ export default {
         var currentForm = this.dynamicValidateForm.form[index];
         currentForm.selectOps = [];
         currentForm.regionRight = '';
-        this.$http.get('http://localhost:8080/getPatrol?type='+routeType,{
+        this.$http.get('/getPatrol?type='+routeType,{
     
         }).then(response => {
            console.log(response.data.patrolList);
@@ -346,7 +351,7 @@ export default {
                    console.log(form[i]);
                    var routeType = form[i].regionLeft;
 
-                   vm.$http.get('http://localhost:8080/getPatrol?type='+routeType,{
+                   vm.$http.get('/getPatrol?type='+routeType,{
     
                     }).then(response => {
                       console.log(response.data.patrolList);

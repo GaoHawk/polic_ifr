@@ -62,6 +62,7 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin:0 auto;
+  max-width:640px;
   margin-top: 23px;
   width:80%;
 }
