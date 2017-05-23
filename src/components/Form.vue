@@ -21,9 +21,11 @@
   </el-form-item>
 
   <el-form-item label="姓名" prop="name"
-    :rules="{
-      required:true, message:'姓名不能为空', trigger:'blur'  
-    }"
+    :rules="[
+      { required:true, message:'姓名不能为空', trigger:'blur' },
+
+      { min:2,max:8,message:'姓名长度为 2到8个字符',trigger:'blur,change'}
+    ]"
   >
     <el-input v-model="dynamicValidateForm.name"></el-input>
   </el-form-item>
@@ -31,7 +33,7 @@
   <el-form-item label="联系方式" prop="phone"
     :rules="[
       { required:true, message:'联系方式不能为空', trigger:'blur' },
-      // { type:'number',message:'请输入正确联系方式' }
+      { max:11, message:'请输入正确的电话号码', trigger:'blur,change'}
     ]"
   >
     <el-input v-model="dynamicValidateForm.phone"></el-input>
@@ -39,8 +41,8 @@
 
   <el-form-item label="编号" prop="number"
     :rules="[
-      { required:true, message:'编号不能为空', trigger:'blur' },
-      // { type:'number',message:'编号必须为数字' }
+      { required: true, message: '编号不能为空', trigger: 'blur' },
+      { min:6, max:8, message: '警员编号6到8个字符', trigger: 'blur,change' }
     ]"
   >
     <el-input v-model="dynamicValidateForm.number"></el-input>
@@ -113,7 +115,6 @@ export default {
             }
           }).then(response => {
             console.log(response.data);
-            console.log(typeof (response.data.usertype +1))
             this.dynamicValidateForm.polic = (response.data.usertype).toString();
             this.dynamicValidateForm.name = response.data.userName;
             this.dynamicValidateForm.phone = response.data.phone;
@@ -151,9 +152,9 @@ export default {
                     })
                 }
             }
-            console.log(this.dynamicValidateForm.form);
+            // console.log(this.dynamicValidateForm.form);
             var selectedBtn = document.querySelectorAll('.right.el-select');
-            console.log(selectedBtn);
+
           },response => {
             console.log(response);
           })
@@ -174,8 +175,7 @@ export default {
              selectOps:[]
            }]
        },
-
-
+       policeOps:['刑侦民警','社区民警','治安民警','巡逻民警','特警','辅警','交警']
     };
   },
   methods:{
@@ -194,7 +194,6 @@ export default {
               let form = this.dynamicValidateForm.form[i];
               if(form.regionRight.length==0){
                 var rSelect = document.querySelectorAll('.el-select.right');
-                console.log(rSelect[i]);
                 var errDiv = document.createElement("div");
                 errDiv.setAttribute('class','el-form-item__error');
                 errDiv.innerHTML = `巡逻点不能为空`;
@@ -214,15 +213,14 @@ export default {
                 // }
               }
             }
-            console.log(patroTotal);
-            console.log(patrolids);
+
             let patroArr = patrolids.substr(1,patrolids.length-1).split(',');
             console.log(patroArr);
             for(let i = 0;i<patroArr.length;i++){
               for(let j =0;j<patroTotal.length;j++){
                  console.log(patroTotal[j].value,Number(patroArr[i]))
                   if(patroTotal[j].value == Number(patroArr[i])){
-                    console.log(true);
+ 
                     patrolnames += ","+ patroTotal[j].label;
                   }
               }
@@ -230,8 +228,7 @@ export default {
             if(!checkSubm){
                 return false;
             }
-            console.log(patrolids);
-            console.log(patrolnames);
+
             this.$http({
                 method: 'post',
                 url:'/modifyUserInfo',
@@ -247,6 +244,7 @@ export default {
 
             }).then(response => {
                 console.log(response.data);
+                let uid = response.data.id;
                 // var classData = response.data.data;
                 // for(let i=0;i<classData.length;i++){
                 //   let classObj = {
@@ -258,8 +256,34 @@ export default {
                var ifr = window.parent.document.getElementById("mainIframe");
                window.parent.document.getElementById("mainIframe").style.display = "none";
                ifr.nextElementSibling.style.display = 'none';
-               ifr.parentNode.parentNode.parentNode.location.reload();
-              //  ifr.parentNode..parentNode.parentNode.reload();
+               // updateRow 修改数据
+              var thisRow = window.parent.document.getElementById(userId);
+              if(thisRow){
+                  var childTd = thisRow.parentNode.parentNode.children;
+                  childTd[1].innerHTML = this.dynamicValidateForm.name;
+                  childTd[2].innerHTML = this.dynamicValidateForm.phone;
+                  childTd[3].innerHTML = this.dynamicValidateForm.number;
+                  childTd[4].innerHTML = patrolnames;
+                  childTd[0].innerHTML = this.policeOps[this.dynamicValidateForm.polic];
+              }else
+              // 添加新数据 addRow
+              {
+                var list  = window.parent.document.querySelector('#tableForm tbody');
+                console.log(list);
+                // 创建新节点添加到页面上
+                var trEle = document.createElement('tr');
+                var element = `
+                  <td>${this.policeOps[this.dynamicValidateForm.polic]}</td>
+                  <td>${this.dynamicValidateForm.name}</td>
+                  <td>${this.dynamicValidateForm.phone}</td>
+                  <td>${this.dynamicValidateForm.number}</td>
+                  <td>${patrolnames}</td>
+                  <td><a style="text-align:center;color:blue;cursor:pointer;" name="${patrolnames}" date-id="${patrolids}" onclick="updateRow(this,${uid});" id="${uid}">修改</a> <a style="text-align:center;color:blue;cursor:pointer;" onclick="delRow(this,${uid});">删除</a></td>
+                `;
+                trEle.innerHTML = element;
+                list.insertBefore(trEle,list.children[1]);
+              }
+              //  ifr.parentNode.parentNode.parentNode.location.reload();
               //  window.parent.reload();
             }, response => {
 

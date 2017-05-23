@@ -10,7 +10,7 @@ import { mapState, mapActions } from 'vuex'
 
 export default {
   beforeCreate(){
-
+    console.log(sessionStorage);
     // if(sessionStorage.showHome){
     //   this.$store.commit('SET_SHOWHOME',sessionStorage.showHome);
     // }
